@@ -1,13 +1,16 @@
-name: Build Linux Binary
+name: Continuous Release
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: # Allows you to run this manually
+    branches:
+      - main  # Runs every time you push to the main branch
+  workflow_dispatch: # Allows manual run from the Actions tab
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -25,10 +28,17 @@ jobs:
 
       - name: Build Binary
         run: |
-          pyinstaller --onefile gofile-downloader.py
+          pyinstaller --onefile --name gofile-downloader gofile-downloader.py
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: Update Latest Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: gofile-downloader-linux
-          path: dist/gofile-downloader
+          files: dist/gofile-downloader
+          tag_name: latest
+          name: "Latest Build"
+          body: "Automated build of the latest commit."
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
